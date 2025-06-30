@@ -19,6 +19,9 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation # Per creare animazioni/plot che si aggiornano
 from collections import deque # Struttura dati tipo lista con aggiunta/rimozione efficiente alle estremità
 
+# Import for ROS2
+from std_msgs.msg import Float32MultiArray, String
+
 class LivePlotter:
     """
     Gestisce la creazione e l'aggiornamento di un grafico Matplotlib in tempo reale

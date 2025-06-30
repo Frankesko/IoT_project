@@ -1,0 +1,224 @@
+<?xml version="1.0" ?>
+<sdf version="1.5">
+  <model name="sim_crazyflie">
+    <static>false</static>
+    <link name="body">
+      <pose>0 0 0.015 0 0 0</pose>
+      <inertial>
+        <mass>0.027</mass>
+        <inertia>
+          <ixx>0.001</ixx>
+          <iyy>0.001</iyy>
+          <izz>0.002</izz>
+        </inertia>
+      </inertial>
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.09 0.09 0.03</size>
+          </box>
+        </geometry>
+      </collision>
+      <visual name="visual">
+        <geometry>
+          <box>
+            <size>0.09 0.09 0.03</size>
+          </box>
+        </geometry>
+        <material>
+          <ambient>0 1 0 1</ambient>
+          <diffuse>0 1 0 1</diffuse>
+        </material>
+      </visual>
+      <velocity_decay>
+        <linear>0.05</linear>
+        <angular>0.05</angular>
+      </velocity_decay>
+    </link>
+    <!-- Bracci e rotori -->
+    <link name="rotor1">
+      <pose>0.045 0.045 0.04 0 0 0</pose>
+      <inertial>
+        <mass>0.005</mass>
+        <inertia>
+          <ixx>0.00001</ixx>
+          <iyy>0.00001</iyy>
+          <izz>0.00002</izz>
+        </inertia>
+      </inertial>
+      <collision name="collision">
+        <geometry>
+          <cylinder>
+            <radius>0.01</radius>
+            <length>0.01</length>
+          </cylinder>
+        </geometry>
+      </collision>
+      <visual name="visual">
+        <geometry>
+          <cylinder>
+            <radius>0.01</radius>
+            <length>0.01</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <ambient>0.2 0.2 0.2 1</ambient>
+          <diffuse>0.2 0.2 0.2 1</diffuse>
+        </material>
+      </visual>
+      <velocity_decay>
+        <linear>0.05</linear>
+        <angular>0.05</angular>
+      </velocity_decay>
+    </link>
+    <link name="rotor2">
+      <pose>-0.045 0.045 0.04 0 0 0</pose>
+      <inertial>
+        <mass>0.005</mass>
+        <inertia>
+          <ixx>0.00001</ixx>
+          <iyy>0.00001</iyy>
+          <izz>0.00002</izz>
+        </inertia>
+      </inertial>
+      <collision name="collision">
+        <geometry>
+          <cylinder>
+            <radius>0.01</radius>
+            <length>0.01</length>
+          </cylinder>
+        </geometry>
+      </collision>
+      <visual name="visual">
+        <geometry>
+          <cylinder>
+            <radius>0.01</radius>
+            <length>0.01</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <ambient>0.2 0.2 0.2 1</ambient>
+          <diffuse>0.2 0.2 0.2 1</diffuse>
+        </material>
+      </visual>
+      <velocity_decay>
+        <linear>0.05</linear>
+        <angular>0.05</angular>
+      </velocity_decay>
+    </link>
+    <link name="rotor3">
+      <pose>-0.045 -0.045 0.04 0 0 0</pose>
+      <inertial>
+        <mass>0.005</mass>
+        <inertia>
+          <ixx>0.00001</ixx>
+          <iyy>0.00001</iyy>
+          <izz>0.00002</izz>
+        </inertia>
+      </inertial>
+      <collision name="collision">
+        <geometry>
+          <cylinder>
+            <radius>0.01</radius>
+            <length>0.01</length>
+          </cylinder>
+        </geometry>
+      </collision>
+      <visual name="visual">
+        <geometry>
+          <cylinder>
+            <radius>0.01</radius>
+            <length>0.01</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <ambient>0.2 0.2 0.2 1</ambient>
+          <diffuse>0.2 0.2 0.2 1</diffuse>
+        </material>
+      </visual>
+      <velocity_decay>
+        <linear>0.05</linear>
+        <angular>0.05</angular>
+      </velocity_decay>
+    </link>
+    <link name="rotor4">
+      <pose>0.045 -0.045 0.04 0 0 0</pose>
+      <inertial>
+        <mass>0.005</mass>
+        <inertia>
+          <ixx>0.00001</ixx>
+          <iyy>0.00001</iyy>
+          <izz>0.00002</izz>
+        </inertia>
+      </inertial>
+      <collision name="collision">
+        <geometry>
+          <cylinder>
+            <radius>0.01</radius>
+            <length>0.01</length>
+          </cylinder>
+        </geometry>
+      </collision>
+      <visual name="visual">
+        <geometry>
+          <cylinder>
+            <radius>0.01</radius>
+            <length>0.01</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <ambient>0.2 0.2 0.2 1</ambient>
+          <diffuse>0.2 0.2 0.2 1</diffuse>
+        </material>
+      </visual>
+      <velocity_decay>
+        <linear>0.05</linear>
+        <angular>0.05</angular>
+      </velocity_decay>
+
+      <!-- LED visual-only DENTRO il link body -->
+      <visual name="led_visual">
+        <pose>0 0 0.06 0 0 0</pose>
+        <geometry>
+        <sphere>
+          <radius>0.01</radius>
+        </sphere>
+        </geometry>
+        <material>
+          <ambient>0 1 0 1</ambient>
+          <diffuse>0 1 0 1</diffuse>
+          <emissive>0 1 0 1</emissive>
+        </material>
+      </visual>
+
+
+    </link>
+
+    <joint name="rotor1_joint" type="fixed">
+      <parent>body</parent>
+      <child>rotor1</child>
+    </joint>
+    <joint name="rotor2_joint" type="fixed">
+      <parent>body</parent>
+      <child>rotor2</child>
+    </joint>
+    <joint name="rotor3_joint" type="fixed">
+      <parent>body</parent>
+      <child>rotor3</child>
+    </joint>
+    <joint name="rotor4_joint" type="fixed">
+      <parent>body</parent>
+      <child>rotor4</child>
+    </joint>
+
+    <!-- Plugin dei rotori -->
+    <plugin name="crazyflie_rotor_plugin" filename="libcrazyflie_rotor_plugin.so"/>
+
+    <plugin name="crazyflie_led_plugin" filename="libcrazyflie_led_plugin.so"/>
+
+    <!-- Plugin pubblicazione posizione modello -->
+    <plugin name="crazyflie_model_pose_plugin" filename="libcrazyflie_model_pose_plugin.so">
+      <publish_period>0.5</publish_period> <!-- Pubblica ogni 0.5 secondi (2Hz) -->
+    </plugin>
+  </model>
+</sdf>
