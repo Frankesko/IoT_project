@@ -228,6 +228,9 @@ class GazeboHoverController(Node):
                 phase_elapsed >= self.FLIP_PREP_DURATION):
                 self.flip_phase = self.FLIP_PHASE_ROTATE
                 self.flip_phase_start_time = time.time()
+                if self.flip_direction in ['right', 'left']:
+                    self.FLIP_ROTATE_DURATION = 1.2
+                    self.FLIP_BRAKE_DURATION = 0.4
                 self.get_logger().info("[FLIP] → FASE ROTAZIONE")
                 
         elif self.flip_phase == self.FLIP_PHASE_ROTATE:
