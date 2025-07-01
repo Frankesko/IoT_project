@@ -5,6 +5,7 @@
 #include <gazebo/physics/physics.hh>
 #include <rclcpp/rclcpp.hpp>
 #include <geometry_msgs/msg/pose_stamped.hpp>
+#include <geometry_msgs/msg/twist.hpp>
 
 namespace gazebo
 {
@@ -22,6 +23,8 @@ namespace gazebo
       event::ConnectionPtr updateConnection_;
       rclcpp::Node::SharedPtr ros_node_;
       rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr pose_pub_;
+      rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr twist_pub_;
+      physics::LinkPtr body_link_;
       rclcpp::Time last_pub_time_;
       double pub_period_sec_;
   };

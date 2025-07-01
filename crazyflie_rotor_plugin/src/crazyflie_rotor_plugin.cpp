@@ -59,9 +59,9 @@ namespace gazebo
           if (rotor_velocities_[i] != 0) all_zero = false;
       if (all_zero) return;
 
-      // Parametri fisici (semplificati)
-      double k_thrust = 1e-6; // coefficiente di spinta
-      double k_torque = 2e-7; // coefficiente di coppia
+      // Parametri fisici (aumentati per flip più efficace)
+      double k_thrust = 3e-6; // coefficiente di spinta (aumentato da 1e-6)
+      double k_torque = 6e-7; // coefficiente di coppia (aumentato da 2e-7)
 
       double total_thrust = 0.0;
 
