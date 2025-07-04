@@ -175,23 +175,6 @@
         <linear>0.05</linear>
         <angular>0.05</angular>
       </velocity_decay>
-
-      <!-- LED visual-only DENTRO il link body -->
-      <visual name="led_visual">
-        <pose>0 0 0.06 0 0 0</pose>
-        <geometry>
-        <sphere>
-          <radius>0.01</radius>
-        </sphere>
-        </geometry>
-        <material>
-          <ambient>0 1 0 1</ambient>
-          <diffuse>0 1 0 1</diffuse>
-          <emissive>0 1 0 1</emissive>
-        </material>
-      </visual>
-
-
     </link>
 
     <joint name="rotor1_joint" type="fixed">
