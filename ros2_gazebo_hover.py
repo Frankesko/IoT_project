@@ -10,50 +10,59 @@ from scipy.spatial.transform import Rotation as R
 
 class GazeboHoverController(Node):
     def __init__(self):
-        # Inizializzazione del nodo ROS2 e delle variabili di stato principali
+        #setting nodo ROS2 e variabili di stato
         super().__init__('gazebo_hover_controller')
-        self.target_altitude = 0.7  # Quota target di default (m)
-        self.current_altitude = 0.0  # Quota attuale
-        self.current_roll = 0.0      # Roll attuale (rad)
-        self.current_pitch = 0.0     # Pitch attuale (rad)
-        self.current_yaw = 0.0       # Yaw attuale (rad)
-        self.current_linear_vel = [0.0, 0.0, 0.0]  # Velocità lineari
-        self.current_angular_vel = [0.0, 0.0, 0.0] # Velocità angolari
-        self.hover_omega = 339       # Velocità rotori per hover
-        self.kp = 200                # Guadagno proporzionale per controllo altitudine
-        self.override_until = 0      # Timeout per override manuale
-        self.manual_rotor_cmd = None # Comando manuale rotori
+        self.target_altitude = 0.7  #quota target di default (m)
+        self.current_altitude = 0.0  #quota attuale
+        
+        self.current_roll = 0.0      #roll attuale (rad) (inclinazione destra/sinistra)
+        self.current_pitch = 0.0     #pitch attuale (rad) (inclinazione avanti/indietro)
+        self.current_yaw = 0.0       #yaw attuale (rad) (orientamento)
 
-        self.MAX_ALTITUDE = 6        # Quota massima consentita
-        self.MAX_CLIMB_INCREMENT = 1.0 # Incremento massimo salita
+        self.current_linear_vel = [0.0, 0.0, 0.0]  #velocità lineari
+        self.current_angular_vel = [0.0, 0.0, 0.0] #velocità angolari
+
+        self.hover_omega = 339       #velocità rotori per hover
+        self.kp = 200                #guadagno proporzionale per controllo altitudine
+        self.override_until = 0      #timeout per override manuale
+        self.manual_rotor_cmd = None #comando manuale rotori
+
+        self.MAX_ALTITUDE = 6        #quota massima consentita
+        self.MAX_CLIMB_INCREMENT = 1.0 #incremento massimo salita
 
         # --- Parametri e stato per la manovra di flip a 360° ---
         self.flip_active = False
         self.flip_direction = None
         self.flip_start_time = 0
-        # Definizione delle fasi del flip
-        self.FLIP_PHASE_PREP = 0      # Preparazione e salita
-        self.FLIP_PHASE_ROTATE = 1    # Rotazione pura
-        self.FLIP_PHASE_BRAKE = 2     # Frenata quando vicino a 360°
-        self.FLIP_PHASE_RECOVER = 3   # Recupero e stabilizzazione finale
+
+        #definizione fasi flip
+        self.FLIP_PHASE_PREP = 0      #preparazione e salita
+        self.FLIP_PHASE_ROTATE = 1    #rotazione pura
+        self.FLIP_PHASE_BRAKE = 2     #frenata quando vicino a 290°
+        self.FLIP_PHASE_RECOVER = 3   #recupero e stabilizzazione finale
+
         self.flip_phase = self.FLIP_PHASE_PREP
         self.flip_phase_start_time = 0
-        # Durate delle varie fasi del flip
-        self.FLIP_PREP_DURATION = 0.5    # Tempo preparazione
-        self.FLIP_ROTATE_DURATION = 3.0  # Tempo rotazione
-        self.FLIP_BRAKE_DURATION = 0.8   # Tempo frenata
-        self.FLIP_RECOVER_DURATION = 4.0 # Tempo recovery
-        # Variabili per il tracking della rotazione accumulata
+
+        #durate delle varie fasi del flip
+        self.FLIP_PREP_DURATION = 0.5    
+        self.FLIP_ROTATE_DURATION = 3.0  
+        self.FLIP_BRAKE_DURATION = 0.8   
+        self.FLIP_RECOVER_DURATION = 4.0 
+
+        #variabili tracking rotazione accumulata
         self.flip_start_angle = 0.0
         self.flip_total_rotation = 0.0
         self.flip_prev_angle = 0.0
-        self.flip_rotation_target = 2 * math.pi  # 360° in radianti
+        self.flip_rotation_target = 2 * math.pi  #360° in radianti
         self.flip_rotation_completed = False
-        # Soglie per cambio fase durante il flip
-        self.FLIP_BRAKE_THRESHOLD = 5.0   # Soglia per iniziare frenata (~287°)
-        self.FLIP_COMPLETE_THRESHOLD = 5.8  # Soglia per considerare il flip completo (~332°)
-        self.FLIP_OVERSHOOT_LIMIT = 6.5   # Limite massimo rotazione (~372°)
-        # Altitudine di riferimento per il flip
+
+        #soglie per cambio fase durante il flip
+        self.FLIP_BRAKE_THRESHOLD = 5.0   #soglia per iniziare frenata (~287°)
+        self.FLIP_COMPLETE_THRESHOLD = 5.8  #soglia per considerare il flip completo (~332°)
+        self.FLIP_OVERSHOOT_LIMIT = 6.5   #limite massimo rotazione (~372°)
+
+        #altitudine di riferimento per il flip
         self.flip_target_altitude = 0.0
         self.flip_original_altitude = 0.0
 
@@ -62,9 +71,9 @@ class GazeboHoverController(Node):
         self.pose_sub = self.create_subscription(PoseStamped, '/model_pose', self.pose_callback, 10)
         self.twist_sub = self.create_subscription(Twist, '/model_twist', self.twist_callback, 10)
         self.cmd_sub = self.create_subscription(String, '/hover_cmd', self.cmd_callback, 10)
-        self.create_timer(0.02, self.control_loop)  # Timer per il ciclo di controllo (50Hz)
+        self.create_timer(0.02, self.control_loop)  #timer per il ciclo di controllo (50Hz)
 
-        # Stato per recovery e sudden drop
+        #stato per recovery e sudden drop
         self.recovering = False
         self.recover_start_time = 0
         self.recover_duration = 2.0
@@ -73,12 +82,12 @@ class GazeboHoverController(Node):
         self.current_quat = [0, 0, 0, 1]
 
     def pose_callback(self, msg):
-        # Callback per aggiornare posizione e orientamento dal topic /model_pose
+        #callback per aggiornare posizione e orientamento dal topic /model_pose
         self.current_altitude = msg.pose.position.z
         q = msg.pose.orientation
         x, y, z, w = q.x, q.y, q.z, q.w
         
-        # Conversione quaternion a angoli di Eulero
+        #conversione quaternion a angoli di Eulero
         t0 = +2.0 * (w * x + y * z)
         t1 = +1.0 - 2.0 * (x * x + y * y)
         roll = math.atan2(t0, t1)
@@ -97,12 +106,12 @@ class GazeboHoverController(Node):
         self.current_quat = [x, y, z, w]
 
     def twist_callback(self, msg):
-        # Callback per aggiornare velocità lineari e angolari dal topic /model_twist
+        #callback per aggiornare velocità lineari e angolari dal topic /model_twist
         self.current_linear_vel = [msg.linear.x, msg.linear.y, msg.linear.z]
         self.current_angular_vel = [msg.angular.x, msg.angular.y, msg.angular.z]
 
     def cmd_callback(self, msg):
-        # Callback per ricevere comandi esterni (quota, flip, override rotori, sudden drop)
+        #callback per ricevere comandi esterni (quota, flip, override rotori, sudden drop)
         try:
             cmd = json.loads(msg.data)
             if 'target_altitude' in cmd:
@@ -129,17 +138,17 @@ class GazeboHoverController(Node):
             self.get_logger().warn("Flip già in corso, ignorato")
             return
         
-        # Controllo stabilità
+        #controllo stabilità
         if abs(self.current_roll) > 0.2 or abs(self.current_pitch) > 0.2:
             self.get_logger().warn(f"Drone non stabile per flip - Roll: {math.degrees(self.current_roll):.1f}°, Pitch: {math.degrees(self.current_pitch):.1f}°")
             return
             
-        # Assicurati di avere altezza sufficiente
+        #assicurati di avere altezza sufficiente
         if self.current_altitude < 0.5:
             self.get_logger().warn("Altitudine insufficiente per flip sicuro")
             return
             
-        # Inizializza flip
+        #inizializza flip
         self.flip_active = True
         self.flip_direction = direction
         self.flip_start_time = time.time()
@@ -147,11 +156,11 @@ class GazeboHoverController(Node):
         self.flip_phase_start_time = time.time()
         self.flip_rotation_completed = False
         
-        # Salva altitudine originale e imposta target MOLTO più alto per flip
+        #salva altitudine originale e imposta target MOLTO più alto per flip
         self.flip_original_altitude = self.target_altitude
         self.flip_target_altitude = max(1.5, self.current_altitude + 0.5)  # Boost altitudine flip
         
-        # RESET TRACKING ROTAZIONE CORRETTO
+        #RESET TRACKING ROTAZIONE CORRETTO
         if direction in ['forward', 'backward']:
             self.flip_start_angle = self.current_pitch
             self.flip_prev_angle = self.current_pitch
@@ -171,27 +180,27 @@ class GazeboHoverController(Node):
         else:  # left, right
             current_angle = self.current_roll
         
-        # Calcola differenza angolare gestendo wrap-around
+        #calcola differenza angolare gestendo wrap-around
         angle_diff = current_angle - self.flip_prev_angle
         
-        # Gestione wrap-around per evitare salti -π/+π
+        #gestione wrap-around per evitare salti -π/+π
         if angle_diff > math.pi:
             angle_diff -= 2 * math.pi
         elif angle_diff < -math.pi:
             angle_diff += 2 * math.pi
         
-        # Accumula la rotazione totale
+        #accumula la rotazione totale
         self.flip_total_rotation += abs(angle_diff)
         self.flip_prev_angle = current_angle
         
         degrees_rotated = math.degrees(self.flip_total_rotation)
         
-        # Log progress ogni 30°
+        #log progress ogni 30°
         if int(degrees_rotated) % 30 == 0 and degrees_rotated > 30:
             progress = min(100, (degrees_rotated / 360) * 100)
             self.get_logger().info(f"[FLIP] Rotazione accumulata: {degrees_rotated:.0f}° ({progress:.0f}%)")
         
-        # Controllo soglie per fasi
+        #controllo soglie per fasi
         if self.flip_total_rotation >= self.FLIP_COMPLETE_THRESHOLD and not self.flip_rotation_completed:
             self.flip_rotation_completed = True
             self.get_logger().info(f"[FLIP] 360° COMPLETATO! ({degrees_rotated:.1f}°)")
@@ -209,7 +218,7 @@ class GazeboHoverController(Node):
             altitude_error = self.flip_target_altitude - self.current_altitude
             omega = self.hover_omega + min(500, max(100, self.kp * altitude_error))
             
-            # Stabilizzazione attiva
+            #stabilizzazione attiva
             roll_correction = -120 * self.current_roll
             pitch_correction = -120 * self.current_pitch
             
@@ -234,13 +243,13 @@ class GazeboHoverController(Node):
         elif self.flip_phase == self.FLIP_PHASE_ROTATE:
             # FASE 2: Rotazione controllata - continua fino a ~290°
             
-            # Passa a frenata quando vicino a 290°
+            #passa a frenata quando vicino a 290°
             if self.flip_total_rotation >= self.FLIP_BRAKE_THRESHOLD:
                 self.flip_phase = self.FLIP_PHASE_BRAKE
                 self.flip_phase_start_time = time.time()
                 self.get_logger().info(f"[FLIP] → FRENATA a {degrees_rotated:.1f}°")
             
-            # Controllo timeout più lungo per permettere rotazione completa
+            #controllo timeout più lungo per permettere rotazione completa
             elif phase_elapsed >= self.FLIP_ROTATE_DURATION:
                 self.get_logger().warn(f"[FLIP] Timeout rotazione a {degrees_rotated:.1f}° → FRENATA")
                 self.flip_phase = self.FLIP_PHASE_BRAKE
@@ -250,7 +259,7 @@ class GazeboHoverController(Node):
             base_omega = 600   # BOOST SIGNIFICATIVO per mantenimento quota
             rotation_omega = 1490  # BOOST ROTAZIONE molto più potente
             
-            # Boost extra se sta perdendo quota
+            #boost extra se sta perdendo quota
             if self.current_altitude < self.flip_target_altitude - 0.3:
                 altitude_boost = 400
                 self.get_logger().warn(f"[FLIP] BOOST EMERGENZA QUOTA! Alt: {self.current_altitude:.2f}m")
@@ -276,19 +285,19 @@ class GazeboHoverController(Node):
         elif self.flip_phase == self.FLIP_PHASE_BRAKE:
             # FASE 3: Frenata progressiva fino a ~330° - BOOST MANTENUTO
             
-            # Condizioni per passare a recovery
+            #condizioni per passare a recovery
             if (self.flip_total_rotation >= self.FLIP_COMPLETE_THRESHOLD or 
                 phase_elapsed >= self.FLIP_BRAKE_DURATION):
                 self.flip_phase = self.FLIP_PHASE_RECOVER
                 self.flip_phase_start_time = time.time()
                 self.get_logger().info(f"[FLIP] → RECOVERY FINALE a {degrees_rotated:.1f}°")
             
-            # Frenata controllata ma con BOOST per quota
+            #frenata controllata ma con BOOST per quota
             hover_base = self.hover_omega + 600  # BOOST SIGNIFICATIVO per quota
-            #brake_intensity = 200
-            brake_intensity = max(200, 400 - (phase_elapsed * 300))  # Frenata più forte
+            brake_intensity = 200
+            #brake_intensity = max(200, 400 - (phase_elapsed * 300))  # Frenata più forte
             
-            # Boost extra se perde quota durante frenata
+            #boost extra se perde quota durante frenata
             if self.current_altitude < self.flip_target_altitude - 0.4:
                 altitude_boost = 500
                 self.get_logger().warn(f"[FLIP BRAKE] BOOST EMERGENZA! Alt: {self.current_altitude:.2f}m")
@@ -323,23 +332,23 @@ class GazeboHoverController(Node):
             # FASE 4: Recovery finale con stabilizzazione
             altitude_error = self.flip_original_altitude - self.current_altitude
             
-            # Controllo emergenza altitudine
+            #controllo emergenza altitudine
             if self.current_altitude < 0.2:
                 emergency_omega = self.hover_omega + 600
                 msg.data = [float(emergency_omega)] * 4
                 self.get_logger().warn(f"[FLIP RECOVER] EMERGENZA Alt: {self.current_altitude:.2f}m")
             else:
-                # Recovery progressivo
+                #recovery progressivo
                 progress = min(1.0, phase_elapsed / 2.0)
                 
                 base_omega = self.hover_omega + min(300, max(-200, self.kp * altitude_error * 0.9))
                 
-                # Correzioni assetto che crescono nel tempo
+                #correzioni assetto che crescono nel tempo
                 max_correction = 800 * progress
                 roll_correction = max_correction * (-self.current_roll)
                 pitch_correction = max_correction * (-self.current_pitch)
                 
-                # Anti-oscillazione
+                #anti-oscillazione
                 roll_correction -= 300 * progress * self.current_angular_vel[0]
                 pitch_correction -= 300 * progress * self.current_angular_vel[1]
                 
@@ -352,7 +361,7 @@ class GazeboHoverController(Node):
                 
                 msg.data = [float(max(100, min(1800, r))) for r in rotors]
             
-            # Condizioni di uscita
+            #condizioni di uscita
             is_level = abs(self.current_roll) < 0.12 and abs(self.current_pitch) < 0.12
             is_stable = (abs(self.current_angular_vel[0]) < 0.4 and 
                         abs(self.current_angular_vel[1]) < 0.4)
@@ -376,22 +385,22 @@ class GazeboHoverController(Node):
         altitude_error = self.target_altitude - self.current_altitude
         recovery_time = time.time() - self.recover_start_time
         
-        # Controllo emergenza altitudine
+        #controllo emergenza altitudine
         if self.current_altitude < 0.15:
             emergency_omega = self.hover_omega + 500
             msg.data = [float(emergency_omega)] * 4
             self.get_logger().warn(f"[RECOVERY] EMERGENZA - Alt: {self.current_altitude:.2f}m")
             return msg
         
-        # Base omega con controllo altitudine
+        #base omega con controllo altitudine
         omega = self.hover_omega + min(250, max(-250, self.kp * altitude_error * 0.7))
         
-        # Correzioni assetto progressive
+        #correzioni assetto progressive
         correction_factor = min(1.0, recovery_time / 1.0)
         roll_correction = 350 * correction_factor * roll_error
         pitch_correction = 350 * correction_factor * pitch_error
         
-        # Smorzamento velocità angolare
+        #smorzamento velocità angolare
         roll_correction -= 150 * correction_factor * self.current_angular_vel[0]
         pitch_correction -= 150 * correction_factor * self.current_angular_vel[1]
         
@@ -404,7 +413,7 @@ class GazeboHoverController(Node):
         
         msg.data = [float(max(150, min(1400, r))) for r in rotors]
         
-        # Verifica stabilità
+        #verifica stabilità
         is_stable = abs(roll_error) < 0.08 and abs(pitch_error) < 0.08
         is_slow = abs(self.current_angular_vel[0]) < 0.25 and abs(self.current_angular_vel[1]) < 0.25
         
@@ -416,7 +425,7 @@ class GazeboHoverController(Node):
         return msg
 
     def start_sudden_drop(self):
-        # Attiva una caduta improvvisa abbassando temporaneamente la quota target
+        #attiva una caduta improvvisa abbassando temporaneamente la quota target
         if hasattr(self, 'sudden_active') and self.sudden_active: 
             return
         drop = random.uniform(0.15, 0.4)
@@ -432,26 +441,26 @@ class GazeboHoverController(Node):
         self.get_logger().info("[LED] ROSSO: SUDDEN DROP!")
 
     def set_led_effect(self, effect):
-        # Imposta l'effetto LED simulato (solo log)
+        #imposta l'effetto LED simulato (solo log)
         if self.led_effect != effect:
             self.led_effect = effect
             self.get_logger().info(f"[LED EFFECT] {effect}")
 
     def print_led_red_if_needed(self):
-        # Logga effetto LED rosso se necessario
+        #logga effetto LED rosso se necessario
         if hasattr(self, 'led_effect') and self.led_effect and self.led_effect.startswith("LED: RED"):
             self.get_logger().info("[LED EFFECT] LED: RED (ALERT)")
     
     def control_loop(self):
-        # Ciclo di controllo principale (chiamato periodicamente)
+        #ciclo di controllo principale (chiamato periodicamente)
         now = time.time()
         msg = Float32MultiArray()
         
-        # Clamp target altitude
+        #clamp target altitude
         if self.target_altitude > self.MAX_ALTITUDE:
             self.target_altitude = self.MAX_ALTITUDE
 
-        # SUDDEN DROP (ridotta probabilità)
+        #SUDDEN DROP (ridotta probabilità)
         if not hasattr(self, 'last_sudden_check'):
             self.last_sudden_check = now
             
@@ -477,9 +486,9 @@ class GazeboHoverController(Node):
             self.rotor_pub.publish(msg)
             return
 
-        # Gestione flip
+        #gestione flip
         if self.flip_active:
-            # Timeout di sicurezza più lungo
+            #timeout di sicurezza più lungo
             if now - self.flip_start_time > 20.0:
                 self.get_logger().error("[FLIP] Timeout di sicurezza! Forzando recovery")
                 self.flip_active = False
@@ -491,20 +500,20 @@ class GazeboHoverController(Node):
                 self.rotor_pub.publish(msg)
                 return
 
-        # Gestione recovery
+        #gestione recovery
         elif self.recovering:
             self.set_led_effect("adjusting_yellow")
             msg = self.calculate_recovery_rotors()
             self.rotor_pub.publish(msg)
             return
 
-        # Controllo manuale
+        #controllo manuale
         elif self.manual_rotor_cmd and now < self.override_until:
             self.set_led_effect("adjusting_yellow")
             msg.data = [float(x) for x in self.manual_rotor_cmd]
             self.get_logger().info(f"[MANUALE] Rotor speeds: {msg.data}")
         else:
-            # Hover normale
+            #hover normale
             error = self.target_altitude - self.current_altitude
             abs_error = abs(error)
             
