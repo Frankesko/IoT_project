@@ -2,7 +2,7 @@ nuova velocità rotori:
 ros2 topic pub -1 /sim_crazyflie/rotor_speeds std_msgs/Float32MultiArray "{data: [400, 400, 400, 400]}"
 
 nuova quota:
-ros2 topic pub /hover_cmd std_msgs/String "data: '{\"target_altitude\": 0.6}'"
+ros2 topic pub /hover_cmd std_msgs/String "data: '{\"target_altitude\": 2}'"
 
 flip:
 ros2 topic pub -1 /hover_cmd std_msgs/String "{data: '{\"flip\": \"forward\"}'}

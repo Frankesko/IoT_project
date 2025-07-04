@@ -19,6 +19,11 @@ link_directories(${gazebo_ros_LIBRARY_DIRS})
 add_library(crazyflie_rotor_plugin SHARED src/crazyflie_rotor_plugin.cpp)
 ament_target_dependencies(crazyflie_rotor_plugin rclcpp std_msgs geometry_msgs gazebo_ros)
 
+add_library(crazyflie_model_pose_plugin SHARED model_pose_plugin/crazyflie_model_pose_plugin.cpp)
+ament_target_dependencies(crazyflie_model_pose_plugin rclcpp geometry_msgs)
+target_link_libraries(crazyflie_model_pose_plugin ${gazebo_ros_LIBRARIES})
+install(TARGETS crazyflie_model_pose_plugin LIBRARY DESTINATION lib)
+
 target_link_libraries(crazyflie_rotor_plugin ${gazebo_ros_LIBRARIES})
 
 install(TARGETS crazyflie_rotor_plugin

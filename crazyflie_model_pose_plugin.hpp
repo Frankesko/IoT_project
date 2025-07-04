@@ -14,9 +14,9 @@ namespace gazebo
     public:
       CrazyflieModelPosePlugin();
       virtual ~CrazyflieModelPosePlugin();
-      void Load(physics::ModelPtr _model, sdf::ElementPtr _sdf) override;
+      void Load(physics::ModelPtr _model, sdf::ElementPtr _sdf) override; //chiamato da Gazebo quando il plugin viene caricato.
 
-    private:
+    private: //chiamato a ogni aggiornamento della simulazione.
       void OnUpdate();
 
       physics::ModelPtr model_;
